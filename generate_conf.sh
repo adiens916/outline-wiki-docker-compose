@@ -51,14 +51,14 @@ function create_slack_env {
     fi
 
     read -p "Enter App ID [$SLACK_APP_ID] : " SLACK_APP_ID_INP
-    read -p "Enter Client ID [$SLACK_KEY] : " SLACK_KEY_INP
-    read -p "Enter Client Secret [$SLACK_SECRET]: " SLACK_SECRET_INP
+    read -p "Enter Client ID [$SLACK_CLIENT_ID] : " SLACK_KEY_INP
+    read -p "Enter Client Secret [$SLACK_CLIENT_SECRET]: " SLACK_SECRET_INP
     read -p "Enter Verification Token (*not* Signing Secret) [$SLACK_VERIFICATION_TOKEN]: " SLACK_VERIFICATION_TOKEN_INP
 
     touch env.slack
     env_add SLACK_APP_ID ${SLACK_APP_ID_INP:-SLACK_APP_ID} env.slack
-    env_add SLACK_KEY ${SLACK_KEY_INP:-SLACK_KEY} env.slack
-    env_add SLACK_SECRET ${SLACK_SECRET_INP:-SLACK_SECRET} env.slack
+    env_add SLACK_CLIENT_ID ${SLACK_KEY_INP:-SLACK_CLIENT_ID} env.slack
+    env_add SLACK_CLIENT_SECRET ${SLACK_SECRET_INP:-SLACK_CLIENT_SECRET} env.slack
     env_add SLACK_VERIFICATION_TOKEN ${SLACK_VERIFICATION_TOKEN_INP:-SLACK_VERIFICATION_TOKEN} env.slack
 }
 
@@ -108,6 +108,10 @@ function create_env_files {
     # Disable SSL for PostgreSQL: https://github.com/outline/outline/issues/1501
     env_add PGSSLMODE disable env.outline
 
+    # Fix Slack environment variable names (If not changed, this causes errors)
+    sed "s|SLACK_KEY|SLACK_CLIENT_ID|" -i env.outline
+    sed "s|SLACK_SECRET|SLACK_CLIENT_SECRET|" -i env.outline
+
     # Setup datastore
     sed "s|outline-bucket|${BUCKET_NAME}|" -i data/nginx/http.conf.disabled
     sed "s|outline-bucket|${BUCKET_NAME}|" -i data/nginx/https.conf.disabled
@@ -115,9 +119,9 @@ function create_env_files {
     MINIO_SECRET_KEY=`openssl rand -hex 32`
 
     rm -f env.minio
-    env_add MINIO_ACCESS_KEY $MINIO_ACCESS_KEY env.minio
-    env_add MINIO_SECRET_KEY $MINIO_SECRET_KEY env.minio
-    env_add MINIO_BROWSER off env.minio
+    env_add MINIO_ROOT_USER $MINIO_ACCESS_KEY env.minio
+    env_add MINIO_ROOT_PASSWORD $MINIO_SECRET_KEY env.minio
+    env_add MINIO_BROWSER on env.minio
 
     env_replace AWS_ACCESS_KEY_ID $MINIO_ACCESS_KEY env.outline
     env_replace AWS_SECRET_ACCESS_KEY $MINIO_SECRET_KEY env.outline
